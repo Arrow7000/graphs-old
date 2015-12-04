@@ -10,49 +10,56 @@ stroke = 15;
 
 
 
-//  Styles //
+///  Styles 
+// Line style
 var lineStyle = {
-  strokeWidth: stroke,
-  fillColor: '#446CB3',
-  strokeColor: '#E4F1FE',
-  strokeCap: 'round'
-}
+    strokeWidth: stroke,
+    fillColor: '#446CB3',
+    strokeColor: '#E4F1FE',
+    strokeCap: 'round'
+  }
+  // Node style
 var nodeStyle = lineStyle;
 // nodeStyle.strokeWidth = 10;
 
+// Style for highlighted node
 var highlightStyle = {
   fillColor: '#59ABE3'
 }
 
+
 //////////// Object constructors ////////////
-// Node object constructor
+
+/// Node object constructor
 function Node(pos, nodeID) {
 
+  // Assigns random position if none specified
   this.nextPoint = pos ? pos : randPoint(radius, Nodes);
 
   // Creates the Path
   this.node = new Path.Circle(this.nextPoint, radius);
   this.node.style = nodeStyle;
 
+  // initialises nextPoint to current position
   this.nextPoint = this.node.position;
 
   this.nodeID = nodeID; // Needs to be assigned
   this.lines = []; // Where all connecting lines will be referenced
 
-  this.textLabel = new PointText({
-    position: new Point(this.nextPoint),
-    content: nodeID,
-    fillColor: 'white',
-    fontFamily: 'Calibri',
-    fontSize: 25
-  });
+  // this.textLabel = new PointText({
+  //   position: new Point(this.nextPoint),
+  //   content: nodeID,
+  //   fillColor: 'white',
+  //   fontFamily: 'Calibri',
+  //   fontSize: 25
+  // });
 
   // this.textLabel.point = this.nextPoint;
 
 
   this.move = function() {
-    this.textLabel.position = this.nextPoint;
-    this.textLabel.bringToFront();
+    // this.textLabel.position = this.nextPoint;
+    // this.textLabel.bringToFront();
 
     this.node.position = this.nextPoint;
   }
@@ -228,6 +235,7 @@ function randInt(max) {
   return Math.floor(Math.random() * max + 1)
 }
 
+// Returns random point whilst avoiding all nodes in the list with specified radius
 function randPoint(radius, nodesList) {
   var point;
   var conflict;
@@ -260,7 +268,7 @@ function absVector(vector) {
 
 
 
-/////////////////////////// Procedures 
+/////////////////////////// Procedures / Main
 
 globals.init();
 
@@ -285,6 +293,7 @@ function onFrame(event) {
   adder.node.bringToFront();
 }
 
+// Resize viewport event
 function onResize(event) {
   adder.adderPoint();
 }
