@@ -1,10 +1,10 @@
 // Global variable declarations
-var Nodes, Lines, radius, stroke, connectLines, secondCounter, adder, globDragPoint, text;
+var Nodes, Lines, radius, stroke, connectLines, secondCounter, adder, globDragPoint, text, mouseDownholder;
 Nodes = [];
 Lines = [];
 radius = 55;
 stroke = 15;
-
+mouseDownHolder = null;
 
 
 
@@ -13,18 +13,18 @@ stroke = 15;
 ///  Styles 
 // Line style
 var lineStyle = {
-    strokeWidth: stroke,
-    fillColor: '#446CB3',
-    strokeColor: '#E4F1FE',
-    strokeCap: 'round'
-  }
-  // Node style
+		strokeWidth: stroke,
+		fillColor: '#446CB3',
+		strokeColor: '#E4F1FE',
+		strokeCap: 'round'
+	}
+	// Node style
 var nodeStyle = lineStyle;
 // nodeStyle.strokeWidth = 10;
 
 // Style for highlighted node
 var highlightStyle = {
-  fillColor: '#59ABE3'
+	fillColor: '#59ABE3'
 }
 
 
@@ -33,82 +33,85 @@ var highlightStyle = {
 /// Node object constructor
 function Node(pos, nodeID) {
 
-  // Assigns random position if none specified
-  this.nextPoint = pos ? pos : randPoint(radius, Nodes);
+	// Assigns random position if none specified
+	this.nextPoint = pos ? pos : randPoint(radius, Nodes);
 
-  // Creates the Path
-  this.node = new Path.Circle(this.nextPoint, radius);
-  this.node.style = nodeStyle;
+	// Creates the Path
+	this.node = new Path.Circle(this.nextPoint, radius);
+	this.node.style = nodeStyle;
 
-  // initialises nextPoint to current position
-  this.nextPoint = this.node.position;
+	// initialises nextPoint to current position
+	this.nextPoint = this.node.position;
 
-  this.nodeID = nodeID; // Needs to be assigned
-  this.lines = []; // Where all connecting lines will be referenced
+	this.nodeID = nodeID; // Needs to be assigned
+	this.lines = []; // Where all connecting lines will be referenced
 
-  // this.textLabel = new PointText({
-  //   position: new Point(this.nextPoint),
-  //   content: nodeID,
-  //   fillColor: 'white',
-  //   fontFamily: 'Calibri',
-  //   fontSize: 25
-  // });
+	// this.textLabel = new PointText({
+	//   position: new Point(this.nextPoint),
+	//   content: nodeID,
+	//   fillColor: 'white',
+	//   fontFamily: 'Calibri',
+	//   fontSize: 25
+	// });
 
-  // this.textLabel.point = this.nextPoint;
+	// this.textLabel.point = this.nextPoint;
 
 
-  this.move = function() {
-    // this.textLabel.position = this.nextPoint;
-    // this.textLabel.bringToFront();
+	this.move = function() {
+		// this.textLabel.position = this.nextPoint;
+		// this.textLabel.bringToFront();
 
-    this.node.position = this.nextPoint;
-  }
+		this.node.position = this.nextPoint;
+	}
 
-  // Drag and drop capabilities 
-  this.dragging = false;
-  this.linking = false;
+	// Drag and drop capabilities 
+	this.dragging = false;
+	this.linking = false;
 
-  this.del = function() {
-    for (var i = 0; i < this.lines.length; i++) {
-      this.lines[i].line.remove();
-    }
-    this.node.remove();
-    Nodes.splice(this.nodeID, 1);
-  }
+	this.del = function() {
+		for (var i = 0; i < this.lines.length; i++) {
+			this.lines[i].line.remove();
+		}
+		this.node.remove();
+		Nodes.splice(this.nodeID, 1);
+	}
 
-  var dragPoint;
-  this.node.onMouseDown = function(event) {
-    // console.log(this);
-    if (event.point.isClose(this.node.position, radius - stroke / 2)) {
-      this.node.style = highlightStyle;
-      dragPoint = this.nextPoint - event.point;
-      this.dragging = true;
-      this.node.bringToFront();
-      // console.log("Is close!");
-    } else {
-      console.log(Lines);
-      Lines[Lines.length] = new Line(this, Nodes[randInt(Nodes.length - 1)]);
-      // console.log("Is NOT close!");
-    }
-  }.bind(this);
+	var dragPoint;
+	this.node.onMouseDown = function(event) {
+		mouseDownHolder = this; // Assigns this Node object to the holder
+		// console.log(this);
+		if (event.point.isClose(this.node.position, radius - stroke / 2)) {
+			this.node.style = highlightStyle;
+			dragPoint = this.nextPoint - event.point;
+			this.dragging = true;
+			this.node.bringToFront();
+			// console.log("Is close!");
+		} else {
+			console.log(Lines);
+			Lines[Lines.length] = new Line(this, Nodes[randInt(Nodes.length - 1)]);
+			// console.log("Is NOT close!");
+		}
+	}.bind(this);
 
-  this.node.onMouseDrag = function(event) {
-    if (this.dragging === true) {
-      var locaish = dragPoint + event.point;
-      this.nextPoint = locaish;
-    }
-  }.bind(this);
+	this.node.onMouseDrag = function(event) {
+		if (this.dragging === true) {
+			var locaish = dragPoint + event.point;
+			this.nextPoint = locaish;
+		}
+	}.bind(this);
 
-  this.node.onMouseUp = function(event) {
-    this.nextPoint = dragPoint + event.point;
-    this.node.style = nodeStyle;
-    this.dragging = false;
-  }.bind(this);
+	this.mouseUpEvent = function(event) {
+		this.nextPoint = dragPoint + event.point;
+		this.node.style = nodeStyle;
+		this.dragging = false;
 
-  // Node delete
-  this.node.onDoubleClick = function(event) {
-    this.del();
-  }.bind(this);
+		mouseDownHolder = null; // Clear the global variable from this
+	}.bind(this);
+
+	// Node delete
+	this.node.onDoubleClick = function(event) {
+		this.del();
+	}.bind(this);
 }
 
 
@@ -118,82 +121,86 @@ function Node(pos, nodeID) {
 /////////////////////////
 // Line constructor! 
 function Line(p1, p2) {
-  this.nodes = [p1, p2];
-  p1.lines.push(this);
-  p2.lines.push(this);
+	this.nodes = [p1, p2];
+	p1.lines.push(this);
+	p2.lines.push(this);
 
-  // console.log(p1);
+	// console.log(p1);
 
-  this.line = new Path.Line(p1.nextPoint, p2.nextPoint);
-  this.line.style = lineStyle;
-  this.line.sendToBack();
+	this.line = new Path.Line(p1.nextPoint, p2.nextPoint);
+	this.line.style = lineStyle;
+	this.line.sendToBack();
 
-  this.nextP1 = p1.nextPoint;
-  this.nextP2 = p2.nextPoint;
+	this.nextP1 = p1.nextPoint;
+	this.nextP2 = p2.nextPoint;
 
-  var deleting = false;
-  this.delLine = function() {
-    this.line.remove();
-  }
-  this.line.onDoubleClick = function(event) {
-    this.line.strokeColor.alpha -= 0.05;
-    this.line.remove();
-  }.bind(this);
-  this.line.onMouseUp = function(event) {
-    deleting = false;
-  }.bind(this);
-
-
-  this.move = function() {
-    if (this.nodes[0].dragging === true || this.nodes[1].dragging === true) {
-      this.nextP1 = this.nodes[0].nextPoint;
-      this.nextP2 = this.nodes[1].nextPoint;
-
-      // Implementation of movement. Lines following Nodes. 
-      this.line.firstSegment.point = this.nextP1;
-      this.line.lastSegment.point = this.nextP2;
-    } else {
-      // Force & movement functions
-      // this.line.rotate(3);
+	var deleting = false;
+	this.delLine = function() {
+		this.line.remove();
+	}
+	this.line.onDoubleClick = function(event) {
+		this.line.strokeColor.alpha -= 0.05;
+		this.line.remove();
+	}.bind(this);
+	this.line.onMouseUp = function(event) {
+		deleting = false;
+	}.bind(this);
 
 
-      // Implementation of movement. Nodes following Lines. 
-      this.nodes[0].nextPoint = this.line.firstSegment.point;
-      this.nodes[1].nextPoint = this.line.lastSegment.point;
+	this.move = function() {
+		if (this.nodes[0].dragging === true || this.nodes[1].dragging === true) {
+			this.nextP1 = this.nodes[0].nextPoint;
+			this.nextP2 = this.nodes[1].nextPoint;
 
-    }
-  }
+			// Implementation of movement. Lines following Nodes. 
+			this.line.firstSegment.point = this.nextP1;
+			this.line.lastSegment.point = this.nextP2;
+		} else {
+			// Force & movement functions
+			// this.line.rotate(3);
+
+
+			// Implementation of movement. Nodes following Lines. 
+			this.nodes[0].nextPoint = this.line.firstSegment.point;
+			this.nodes[1].nextPoint = this.line.lastSegment.point;
+
+		}
+	}
 }
 
 function Adder() {
-  this.node = new Path.Circle(new Point(view.bounds.width - 100, view.bounds.height - 100), radius * 1);
-  this.node.style = nodeStyle;
-  this.node.fillColor = '#019851';
-  this.node.strokeWidth /= 1.5;
-  this.node.dragPoint;
+	this.node = new Path.Circle(new Point(view.bounds.width - 100, view.bounds.height - 100), radius * 1);
+	this.node.style = nodeStyle;
+	this.node.fillColor = '#019851';
+	this.node.strokeWidth /= 1.5;
+	this.node.dragPoint;
 
-  this.adderPoint = function() {
-    this.node.position = new Point(view.bounds.width - 100, view.bounds.height - 100);
-  }.bind(this);
+	this.adderPoint = function() {
+		this.node.position = new Point(view.bounds.width - 100, view.bounds.height - 100);
+	}.bind(this);
 
-  this.node.onMouseDown = function(event) {
-    this.dragPoint = this.position - event.point
+	this.node.onMouseDown = function(event) {
+		mouseDownHolder = this;
 
-    globals.newNode(adder.position);
-    this.node.bringToFront();
-  }.bind(this);
+		this.dragPoint = this.position - event.point
 
-  this.node.onMouseDrag = function(event) {
-    var locaish = this.dragPoint + event.point;
-    Nodes[Nodes.length - 1].node.position = locaish;
-  }.bind(this);
+		globals.newNode(event.point);
+		this.node.bringToFront();
+	}.bind(this);
 
-  this.node.onMouseUp = function(event) {
-    var thisNode = Nodes[Nodes.length - 1];
-    if (thisNode.node.position.isClose(this.adderPoint(), radius * 2 + nodeStyle.strokeWidth * 2)) {
-      thisNode.del();
-    } else {}
-  }.bind(this);
+	this.node.onMouseDrag = function(event) {
+		var locaish = this.dragPoint + event.point;
+		Nodes[Nodes.length - 1].node.position = locaish;
+	}.bind(this);
+
+	this.mouseUpEvent = function(event) {
+		var thisNode = Nodes[Nodes.length - 1];
+		if (thisNode.node.position.isClose(this.adderPoint(), radius * 2 + nodeStyle.strokeWidth * 2)) {
+			thisNode.del();
+		} else {}
+
+		mouseDownHolder = null; // Clear the global variable from this
+	}.bind(this);
 }
 ////////// End of object constructors ////////////
 
@@ -207,61 +214,61 @@ function Adder() {
 // Initialiser function
 
 window.globals = {
-  init: function() {
-    project.activeLayer.removeChildren();
+	init: function() {
+		project.activeLayer.removeChildren();
 
-    adder = new Adder;
+		adder = new Adder;
 
-    Nodes = [];
-    Lines = [];
+		Nodes = [];
+		Lines = [];
 
-    for (var i = 0; i < nodeNum; i++) {
-      Nodes[i] = new Node(randPoint(radius, Nodes), i);
-    }
-    for (var i = 0; i < lineConnections.length; i++) {
-      Lines[i] = new Line(Nodes[lineConnections[i].from], Nodes[lineConnections[i].to]);
-    }
-  },
-  newNode: function(loc) {
-    Nodes.push(new Node(loc, Nodes.length));
-    console.log("Nodes.length: " + Nodes.length);
-  }
+		for (var i = 0; i < nodeNum; i++) {
+			Nodes[i] = new Node(randPoint(radius, Nodes), i);
+		}
+		for (var i = 0; i < lineConnections.length; i++) {
+			Lines[i] = new Line(Nodes[lineConnections[i].from], Nodes[lineConnections[i].to]);
+		}
+	},
+	newNode: function(loc) {
+		Nodes.push(new Node(loc, Nodes.length));
+		console.log("Nodes.length: " + Nodes.length);
+	}
 }
 
 
 
 // Returns random integer under max parameter
 function randInt(max) {
-  return Math.floor(Math.random() * max + 1)
+	return Math.floor(Math.random() * max + 1)
 }
 
 // Returns random point whilst avoiding all nodes in the list with specified radius
 function randPoint(radius, nodesList) {
-  var point;
-  var conflict;
-  var bounds = view.bounds;
-  var boxMargin = radius * 2;
-  var frame = new Rectangle(0, 0, bounds.width, bounds.height);
-  var newFrame = frame.scale(0.8);
+	var point;
+	var conflict;
+	var bounds = view.bounds;
+	var boxMargin = radius * 2;
+	var frame = new Rectangle(0, 0, bounds.width, bounds.height);
+	var newFrame = frame.scale(0.8);
 
-  do {
-    conflict = false;
-    point = Point.random() * new Rectangle(newFrame.width, newFrame.height) + newFrame.point;
-    for (var i = 0; i < Nodes.length; i++) {
-      if (point.isClose(Nodes[i].node.position, radius * 3)) {
-        conflict = true;
-      }
-    }
-    console.log("Conflict is " + conflict);
-  } while (conflict == true);
+	do {
+		conflict = false;
+		point = Point.random() * new Rectangle(newFrame.width, newFrame.height) + newFrame.point;
+		for (var i = 0; i < Nodes.length; i++) {
+			if (point.isClose(Nodes[i].node.position, radius * 3)) {
+				conflict = true;
+			}
+		}
+		console.log("Conflict is " + conflict);
+	} while (conflict == true);
 
-  return point;
+	return point;
 }
 
 function absVector(vector) {
-  var newX = Math.sqrt(vector.x * vector.x);
-  var newY = Math.sqrt(vector.y * vector.y);
-  return new Point(newX, newY);
+	var newX = Math.sqrt(vector.x * vector.x);
+	var newY = Math.sqrt(vector.y * vector.y);
+	return new Point(newX, newY);
 }
 
 
@@ -278,24 +285,33 @@ globals.init();
 
 
 
-//////////////////////////////////////
-///////////// Frame event ////////////
-//////////////////////////////////////
+////////////////////////////////////////////////
+///////////// Frame & global events ////////////
+////////////////////////////////////////////////
 function onFrame(event) {
 
 
-  for (var i = 0; i < Nodes.length; i++) {
-    Nodes[i].move();
-  }
-  for (var i = 0; i < Lines.length; i++) {
-    Lines[i].move();
-  }
-  adder.node.bringToFront();
+	for (var i = 0; i < Nodes.length; i++) {
+		Nodes[i].move();
+	}
+	for (var i = 0; i < Lines.length; i++) {
+		Lines[i].move();
+	}
+	adder.node.bringToFront();
 }
 
 // Resize viewport event
 function onResize(event) {
-  adder.adderPoint();
+	adder.adderPoint();
+}
+
+function onMouseUp(event) {
+	if (mouseDownHolder !== null) {
+		console.log("Mouse up on:", mouseDownHolder);
+		mouseDownHolder.mouseUpEvent(event);
+	} else {
+		console.log("Mouse up on", mouseDownHolder);
+	}
 }
 
 
