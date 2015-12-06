@@ -24,6 +24,7 @@ app.get('/', function(req, res) {
 
 // All other paths result in 404
 app.get('*', function(req, res) {
-	res.status(404).sendFile(__dirname + '/404.html');
+	res.status(404).end();
+	// .sendFile(__dirname + '/404.html');
 });
 
