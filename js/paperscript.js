@@ -117,7 +117,9 @@ function Node(pos, nodeID) {
 
 	// Node delete
 	this.node.onDoubleClick = function(event) {
-		this.del();
+		if (event.point.isClose(this.node.position, radius - stroke / 2)) {
+			this.del();
+		}
 	}.bind(this);
 }
 
