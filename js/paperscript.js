@@ -41,29 +41,17 @@ function Node(pos, nodeID) {
 	this.node.style = nodeStyle;
 
 	// initialises nextPoint to current position
-	this.nextPoint = this.node.position;
+	// this.nextPoint = this.node.position;
 
-	this.nodeID = nodeID; // Needs to be assigned
-	this.selected = false;
+	// this.nodeID = nodeID; // Needs to be assigned
+	this.selected = false; // Gets set to true for deleting this Node from the Nodes array
 	this.lines = []; // Where all connecting lines will be referenced
-
-	// this.textLabel = new PointText({
-	//   position: new Point(this.nextPoint),
-	//   content: nodeID,
-	//   fillColor: 'white',
-	//   fontFamily: 'Calibri',
-	//   fontSize: 25
-	// });
-
-	// this.textLabel.point = this.nextPoint;
 
 
 	this.move = function() {
-		// this.textLabel.position = this.nextPoint;
-		// this.textLabel.bringToFront();
-		if (this.dragging) {
-			this.node.position = this.nextPoint;
-		}
+		// if (this.dragging) {
+		this.node.position = this.nextPoint;
+		// }
 	}
 
 	// Drag and drop capabilities 
@@ -71,11 +59,13 @@ function Node(pos, nodeID) {
 	this.linking = false;
 
 	this.del = function() {
-		this.selected = true;
+		this.selected = true; // So that it can be identified from outside
+		// Removes all lines associated with this Node
 		for (var i = 0; i < this.lines.length; i++) {
 			this.lines[i].line.remove();
 		}
 
+		// loops through array and deletes this Node based on its being 'selected'
 		for (var i = 0; i < Nodes.length; i++) {
 			if (Nodes[i].selected === true) {
 				Nodes[i].node.remove();
@@ -85,27 +75,26 @@ function Node(pos, nodeID) {
 	}
 
 	var dragPoint;
-	this.node.onMouseDown = function(event) {
+	this.mouseDownEvent = function(event) {
 		mouseDownHolder = this; // Assigns this Node object to the holder
 		this.node.bringToFront();
 		if (event.point.isClose(this.node.position, radius - stroke / 2)) {
 			this.dragging = true;
 			this.node.style = highlightStyle;
 			dragPoint = this.nextPoint - event.point;
-
 			// console.log("Is close!");
 		} else {
 			// console.log(Lines);
 			Lines[Lines.length] = new Line(this, Nodes[randInt(Nodes.length - 1)]);
 			// console.log("Is NOT close!");
 		}
-	}.bind(this);
+	}
 
-	this.node.onMouseDrag = function(event) {
+	this.mouseDragEvent = function(event) {
 		if (this.dragging) {
 			this.nextPoint = dragPoint + event.point;
 		}
-	}.bind(this);
+	}
 
 	this.mouseUpEvent = function(event) {
 		this.nextPoint = dragPoint + event.point;
@@ -113,6 +102,16 @@ function Node(pos, nodeID) {
 		this.dragging = false;
 
 		mouseDownHolder = null; // Clear the global variable from this
+	}
+
+
+	/// Technical mouse events. Only call better defined functions above.
+	this.node.onMouseDown = function(event) {
+		this.mouseDownEvent(event);
+	}.bind(this);
+
+	this.node.onMouseDrag = function(event) {
+		this.mouseDragEvent(event);
 	}.bind(this);
 
 	// Node delete
@@ -185,7 +184,7 @@ function Adder() {
 	this.node.style = nodeStyle;
 	this.node.fillColor = '#019851';
 	this.node.strokeWidth /= 1.5;
-	this.dragPoint;
+	var dragPoint;
 
 	this.adderPoint = function() {
 		this.node.position = new Point(view.bounds.width - 100, view.bounds.height - 100);
@@ -194,7 +193,7 @@ function Adder() {
 	this.node.onMouseDown = function(event) {
 		mouseDownHolder = this;
 
-		this.dragPoint = this.node.position - event.point
+		dragPoint = this.node.position - event.point
 
 		globals.newNode(this.node.position);
 		this.node.bringToFront();
@@ -202,9 +201,10 @@ function Adder() {
 
 	this.node.onMouseDrag = function(event) {
 		// console.log(event.point);
-		var locaish = this.dragPoint + event.point;
+		var locaish = dragPoint + event.point;
 		Nodes[Nodes.length - 1].node.position = locaish;
 	}.bind(this);
+
 
 	this.mouseUpEvent = function(event) {
 		var thisNode = Nodes[Nodes.length - 1];
