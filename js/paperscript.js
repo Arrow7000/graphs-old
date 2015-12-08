@@ -305,6 +305,7 @@ function onResize(event) {
 	adder.adderPoint();
 }
 
+// Universal onMouseUp event - which executes selected object's individually defined mouseUpEvent function.
 function onMouseUp(event) {
 	if (mouseDownHolder !== null) {
 		console.log("Mouse up on:", mouseDownHolder);
