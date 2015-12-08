@@ -71,6 +71,7 @@ function Node(pos, nodeID) {
 	this.linking = false;
 
 	this.del = function() {
+		this.selected = true;
 		for (var i = 0; i < this.lines.length; i++) {
 			this.lines[i].line.remove();
 		}
@@ -116,7 +117,6 @@ function Node(pos, nodeID) {
 
 	// Node delete
 	this.node.onDoubleClick = function(event) {
-		this.selected = true;
 		this.del();
 	}.bind(this);
 }
@@ -283,7 +283,6 @@ function absVector(vector) {
 	var newY = Math.sqrt(vector.y * vector.y);
 	return new Point(newX, newY);
 }
-
 
 
 
