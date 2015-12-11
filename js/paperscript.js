@@ -31,7 +31,7 @@ var highlightStyle = {
 //////////// Object constructors ////////////
 
 /// Node object constructor
-function Node(pos, nodeID) {
+function Node(pos) {
 
 	// Assigns random position if none specified
 	this.nextPoint = pos ? pos : randPoint(radius, Nodes);
@@ -131,58 +131,117 @@ function Node(pos, nodeID) {
 
 
 
-/////////////////////////
-// Line constructor! 
-function Line(p1, p2) {
-	this.nodes = [p1, p2];
-	p1.lines.push(this);
-	p2.lines.push(this);
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////// Line constructor! 
+function Line(node1, node2) {
+	console.log("Lines.length", Lines.length);
 
-	// console.log(p1);
 
-	this.line = new Path.Line(p1.nextPoint, p2.nextPoint);
+	
+
+	// Adds second Node
+	this.addNode2 = function(node2) {
+		this.nodes.push(node2);
+		node2.lines.push(this);
+
+	}
+
+
+
+
+
+
+	this.nodes = [node1];
+
+	this.line = new Path.Line(node1.nextPoint, node2.nextPoint);
+
+	if (node2) {
+		this.addNode2(node2);
+	} else {
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+	///// Original line constructor, requiring 2 Node parameter inputs
+
+	this.nodes = [node1, node2]; // Adds references to two Nodes
+
+	// Adds itself to lines[] array in both of its nodes
+	node1.lines.push(this);
+	node2.lines.push(this);
+
+	// console.log(this.nodes);
+	// Draws the actual line path
+	this.line = new Path.Line(node1.nextPoint, node2.nextPoint);
 	this.line.style = lineStyle;
 	this.line.sendToBack();
 
-	this.nextP1 = p1.nextPoint;
-	this.nextP2 = p2.nextPoint;
-
-	var deleting = false;
-	this.delLine = function() {
-		this.line.remove();
-	}
-	this.line.onMouseDown = function(event) {
-		// body...
-	}.bind(this);
-	this.line.onDoubleClick = function(event) {
-		this.line.strokeColor.alpha -= 0.05;
-		this.line.remove();
-	}.bind(this);
-	this.line.onMouseUp = function(event) {
-		deleting = false;
-	}.bind(this);
 
 
-	this.move = function() {
-		if (this.nodes[0].dragging === true || this.nodes[1].dragging === true) {
-			this.nextP1 = this.nodes[0].nextPoint;
-			this.nextP2 = this.nodes[1].nextPoint;
-
-			// Implementation of movement. Lines following Nodes. 
-			this.line.firstSegment.point = this.nextP1;
-			this.line.lastSegment.point = this.nextP2;
-		} else {
-			// Force & movement functions
-			// this.line.rotate(3);
 
 
-			// Implementation of movement. Nodes following Lines. 
-			this.nodes[0].nextPoint = this.line.firstSegment.point;
-			this.nodes[1].nextPoint = this.line.lastSegment.point;
+	// this.nextnode1 = node1.nextPoint;
+	// this.nextnode2 = node2.nextPoint;
 
+	// Handle for selecting this Line when deleting
+	this.selected = false;
+
+	this.del = function() {
+		this.selected = true;
+		for (var i = 0; i < Lines.length; i++) {
+			if (Lines[i].selected === true) {
+				Lines[i].line.remove(); // Removes line path
+				// Removes references to line in the Line's two owner Nodes
+				for (var j = 0; j < node1.lines.length; j++) {
+					if (node1.lines[j].selected === true) node1.lines.splice(j, 1);
+				}
+				for (var j = 0; j < node2.lines.length; j++) {
+					if (node2.lines[j].selected === true) node2.lines.splice(j, 1);
+				}
+				Lines.splice(i, 1);
+				this.line.remove();
+				break;
+			}
 		}
 	}
+
+	this.move = function() {
+		this.line.firstSegment.point = this.nodes[0].nextPoint;
+		this.line.lastSegment.point = this.nodes[1].nextPoint;
+	}
+
+	/// Mouse events
+	this.mouseDownEvent = function(event) {
+		mouseDownHolder = this; // Assigns this Line object to the global holder
+	}
+
+	this.mouseUpEvent = function(event) {}
+
+
+	/// Technical mouse events. They only call the better defined functions above.
+	this.line.onMouseDown = function(event) {
+		this.mouseDownEvent(event);
+	}.bind(this);
+
+	this.line.onDoubleClick = function(event) {
+		// this.line.strokeColor.alpha -= 0.05;
+		this.del();
+	}.bind(this);
+
 }
+
+
+
+
 
 function Adder() {
 	var margin = 100;
@@ -222,18 +281,17 @@ function Adder() {
 
 
 	this.mouseUpEvent = function(event) {
-		thisNode.mouseUpEvent(event);
-		if (thisNode.node.position.isClose(this.node.position, radius * 2 + nodeStyle.strokeWidth * 2)) {
-			thisNode.del();
+		thisNode.mouseUpEvent(event); // Activates the mouseUpEvent for the Node last created
+		// Checks if Node is too close to Adder
+		if (thisNode.node.position.isClose(this.node.position, radius * 2 + nodeStyle.strokeWidth * 1.5)) {
+			thisNode.del(); // Deletes Node
 			console.log("Was too close! Drag it further out.");
 		} else {
-			// thisNode.nextPoint = event.point;
 			console.log("Was far enough. Enjoy your new Node.");
-			thisNode.newNode = false;
+			thisNode.newNode = false; // Node is not new anymore
 		}
-
 		mouseDownHolder = null; // Clear the global variable from this
-	}.bind(this);
+	}
 }
 ////////// End of object constructors ////////////
 
@@ -244,9 +302,10 @@ function Adder() {
 
 //////////////////////// Other functions
 
-// Initialiser function
 
+// Global functions: funcs that need to be accesible from the main JS context
 window.globals = {
+	// Initialiser function
 	init: function() {
 		project.activeLayer.removeChildren();
 
@@ -262,8 +321,9 @@ window.globals = {
 			Lines[i] = new Line(Nodes[lineConnections[i].from], Nodes[lineConnections[i].to]);
 		}
 	},
+	// Create a new Node
 	newNode: function(loc) {
-		Nodes.push(new Node(loc, Nodes.length));
+		Nodes.push(new Node(loc));
 		console.log("Nodes.length: " + Nodes.length);
 	}
 }
