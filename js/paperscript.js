@@ -88,7 +88,10 @@ function Node(pos) {
 			this.dragPoint = this.nextPoint - event.point;
 			// console.log("Clicked middle");
 		} else {
-			Lines[Lines.length] = new Line(this, Nodes[randInt(Nodes.length - 1)]);
+			// Lines[Lines.length] = new Line(this, Nodes[randInt(Nodes.length - 1)]);
+			Lines[Lines.length] = new Line(this);
+			Lines[Lines.length - 1].mouseDownEvent(event);
+
 			// console.log("Clicked edge");
 		}
 	}
@@ -96,6 +99,8 @@ function Node(pos) {
 	this.mouseDragEvent = function(event) {
 		if (this.dragging) {
 			this.nextPoint = this.dragPoint + event.point;
+		} else {
+			Lines[Lines.length - 1].mouseDragEvent(event);
 		}
 	}
 
@@ -137,51 +142,23 @@ function Line(node1, node2) {
 	console.log("Lines.length", Lines.length);
 
 
-
-
-	// Adds second Node
-	this.addNode2 = function(node2) {
-		this.nodes.push(node2);
-		node2.lines.push(this);
-
-	}
-
-
-
-
-
-
-	this.nodes = [node1];
-
-	this.line = new Path.Line(node1.nextPoint, node2.nextPoint);
-
-	if (node2) {
-		this.addNode2(node2);
-	} else {
-
-	}
-
-
-
-
-
-
-
-
-
-
-
-	///// Original line constructor, requiring 2 Node parameter inputs
-
-	this.nodes = [node1, node2]; // Adds references to two Nodes
-
-	// Adds itself to lines[] array in both of its nodes
+	this.nodes = [node1]; // Assigns first Node to nodes array
 	node1.lines.push(this);
-	node2.lines.push(this);
 
-	// console.log(this.nodes);
-	// Draws the actual line path
-	this.line = new Path.Line(node1.nextPoint, node2.nextPoint);
+	if (node2) { // If was given a 2nd Node as input parameter
+
+		this.nodes.push(node2); // Assigns 2nd Node to nodes array
+		node2.lines.push(this); // Pushes itself into the Node's lines array
+
+		// Draws the actual line path
+		this.line = new Path.Line(node1.nextPoint, node2.nextPoint);
+
+	} else {
+		// Draws the actual line path
+		this.line = new Path.Line(node1.nextPoint, node1.nextPoint);
+	}
+
+	// Line style stuff
 	this.line.style = lineStyle;
 	this.line.sendToBack();
 
@@ -189,8 +166,7 @@ function Line(node1, node2) {
 
 
 
-	// this.nextnode1 = node1.nextPoint;
-	// this.nextnode2 = node2.nextPoint;
+
 
 	// Handle for selecting this Line when deleting
 	this.selected = false;
@@ -204,11 +180,14 @@ function Line(node1, node2) {
 				for (var j = 0; j < node1.lines.length; j++) {
 					if (node1.lines[j].selected === true) node1.lines.splice(j, 1);
 				}
-				for (var j = 0; j < node2.lines.length; j++) {
-					if (node2.lines[j].selected === true) node2.lines.splice(j, 1);
+				if (this.nodes.length > 1) { // Only deletes itself from 2nd Node's lines array if it has a 2nd Node
+					for (var j = 0; j < this.nodes[1].lines.length; j++) {
+						if (this.nodes[1].lines[j].selected === true) this.nodes[1].lines.splice(j, 1);
+					}
 				}
-				Lines.splice(i, 1);
-				this.line.remove();
+
+				Lines.splice(i, 1); // Removes itself from global Lines array
+				this.line.remove(); // Removes canvas line
 				break;
 			}
 		}
@@ -216,24 +195,67 @@ function Line(node1, node2) {
 
 	this.move = function() {
 		this.line.firstSegment.point = this.nodes[0].nextPoint;
-		this.line.lastSegment.point = this.nodes[1].nextPoint;
+		if (this.nodes.length > 1) { // Only updates 2nd end's position if it's attached to a Node
+			this.line.lastSegment.point = this.nodes[1].nextPoint;
+		}
 	}
 
 	/// Mouse events
 	this.mouseDownEvent = function(event) {
 		mouseDownHolder = this; // Assigns this Line object to the global holder
+		if (this.nodes.length > 1) {
+			this.line.lastSegment.point = event.point;
+		}
+	}
+
+	this.mouseDragEvent = function(event) {
+		this.line.lastSegment.point = event.point;
 	}
 
 	this.mouseUpEvent = function(event) {
-		if (!this.nodes > 1) { // if Line only has one Node attached to it, releasing the mouse button deletes the Line
-			this.del();
+		var secondNode = null;
+		var leastDistance = 1000;
+		for (var i = 0; i < Nodes.length; i++) {
+			var currNodeDistance = event.point.getDistance(Nodes[i].nextPoint);
+
+			if (currNodeDistance < leastDistance) {
+				leastDistance = currNodeDistance;
+				secondNode = Nodes[i];
+			}
 		}
+
+		if (this.nodes.length < 2) { // if Line only has one Node attached to it, releasing the mouse button deletes the Line
+
+			if (leastDistance < radius) {
+				/// Adds second Node
+				this.nodes.push(secondNode);
+				this.nodes[1].lines.push(this);
+				this.line.remove();
+				this.line = new Path.Line(this.nodes[0].nextPoint, this.nodes[1].nextPoint);
+				// Line style stuff
+				this.line.style = lineStyle;
+				this.line.sendToBack();
+				console.log("Line close enough to a Node :)");
+			} else {
+				this.del();
+				console.log("Line not close enough to a Node.");
+			}
+		}
+
+
+
+
+		mouseDownHolder = null;
 	}
 
 
 	/// Technical mouse events. They only call the better defined functions above.
 	this.line.onMouseDown = function(event) {
 		this.mouseDownEvent(event);
+	}.bind(this);
+
+	this.line.onMouseDrag = function(event) {
+		this.mouseDragEvent(event);
 	}.bind(this);
 
 	this.line.onDoubleClick = function(event) {
