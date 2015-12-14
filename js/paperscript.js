@@ -137,7 +137,7 @@ function Line(node1, node2) {
 	console.log("Lines.length", Lines.length);
 
 
-	
+
 
 	// Adds second Node
 	this.addNode2 = function(node2) {
@@ -224,7 +224,11 @@ function Line(node1, node2) {
 		mouseDownHolder = this; // Assigns this Line object to the global holder
 	}
 
-	this.mouseUpEvent = function(event) {}
+	this.mouseUpEvent = function(event) {
+		if (!this.nodes > 1) { // if Line only has one Node attached to it, releasing the mouse button deletes the Line
+			this.del();
+		}
+	}
 
 
 	/// Technical mouse events. They only call the better defined functions above.
