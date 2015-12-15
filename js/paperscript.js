@@ -49,6 +49,20 @@ function Node(pos) {
 	this.lines = []; // Where all connecting lines will be referenced
 
 
+	// Returns array with all Nodes that this Node is connected to
+	this.nodes = function() {
+		var nodesArray = [];
+		for (var i = 0; i < this.lines.length; i++) {
+			for (var j = 0; j < this.lines[i].nodes.length; j++) {
+				if (this.lines[i].nodes[j] !== this) {
+					nodesArray.push(this.lines[i].nodes[j]);
+				}
+			}
+		}
+		return nodesArray;
+	}
+
+
 	this.move = function() {
 		// if (this.dragging) {
 		this.node.position = this.nextPoint;
@@ -86,14 +100,11 @@ function Node(pos) {
 			this.dragging = true;
 			if (!this.newNode) this.node.style = highlightStyle;
 			this.dragPoint = this.nextPoint - event.point;
-			// console.log("Clicked middle");
 		} else {
-			// Lines[Lines.length] = new Line(this, Nodes[randInt(Nodes.length - 1)]);
 			Lines[Lines.length] = new Line(this);
 			Lines[Lines.length - 1].mouseDownEvent(event);
-
-			// console.log("Clicked edge");
 		}
+		console.log("Ths Node's connected Nodes: ", this.nodes());
 	}
 
 	this.mouseDragEvent = function(event) {
@@ -168,9 +179,10 @@ function Line(node1, node2) {
 
 
 
-	// Handle for selecting this Line when deleting
+	// Handle for selecting this Line from outside when deleting
 	this.selected = false;
 
+	// Deletes this Line and all references to it
 	this.del = function() {
 		this.selected = true;
 		for (var i = 0; i < Lines.length; i++) {
@@ -193,8 +205,9 @@ function Line(node1, node2) {
 		}
 	}
 
+	// Updates the Line's ends' location
 	this.move = function() {
-		this.line.firstSegment.point = this.nodes[0].nextPoint;
+		this.line.firstSegment.point = this.nodes[0].nextPoint; // First Line end always follows the Node it's attached to
 		if (this.nodes.length > 1) { // Only updates 2nd end's position if it's attached to a Node
 			this.line.lastSegment.point = this.nodes[1].nextPoint;
 		}
@@ -213,8 +226,9 @@ function Line(node1, node2) {
 	}
 
 	this.mouseUpEvent = function(event) {
-		var secondNode = null;
-		var leastDistance = 1000;
+		var secondNode = null,
+			leastDistance = 10000;
+		// Runs through each Node to check which is closest
 		for (var i = 0; i < Nodes.length; i++) {
 			var currNodeDistance = event.point.getDistance(Nodes[i].nextPoint);
 
@@ -224,27 +238,35 @@ function Line(node1, node2) {
 			}
 		}
 
-		if (this.nodes.length < 2) { // if Line only has one Node attached to it, releasing the mouse button deletes the Line
+		if (this.nodes.length < 2) {
 
-			if (leastDistance < radius) {
-				/// Adds second Node
+			var nodesAlreadyConnected = false;
+			var firstNodeNodes = this.nodes[0].nodes();
+
+			// console.log("This Line's first Node's connections are", firstNodeNodes);
+
+			for (var i = 0; i < firstNodeNodes.length; i++) {
+				if (firstNodeNodes[i] === secondNode) {
+					console.log("Already connected! :(");
+					nodesAlreadyConnected = true;
+				}
+			}
+
+			if (leastDistance < radius && !nodesAlreadyConnected) { // Checks if closest Node is within 1 radius of mouseUp AND if nodes are not connected yet by another Line
+				/// Connects to second Node
 				this.nodes.push(secondNode);
 				this.nodes[1].lines.push(this);
-				this.line.remove();
-				this.line = new Path.Line(this.nodes[0].nextPoint, this.nodes[1].nextPoint);
-				// Line style stuff
-				this.line.style = lineStyle;
-				this.line.sendToBack();
-				console.log("Line close enough to a Node :)");
-			} else {
+				this.line.lastSegment.point = this.nodes[1].nextPoint;
+				// console.log("Line close enough to a Node :)");
+				console.log("New Node connection!");
+			} else { // if Line is too far, releasing the mouse button deletes the Line
 				this.del();
-				console.log("Line not close enough to a Node.");
+				if (!nodesAlreadyConnected) {
+					console.log("Line not close enough to a Node. try connecting again.");
+				}
 			}
+
 		}
-
-
-
-
 		mouseDownHolder = null;
 	}
 
@@ -259,7 +281,6 @@ function Line(node1, node2) {
 	}.bind(this);
 
 	this.line.onDoubleClick = function(event) {
-		// this.line.strokeColor.alpha -= 0.05;
 		this.del();
 	}.bind(this);
 
