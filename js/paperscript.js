@@ -2,7 +2,7 @@
 var Nodes, Lines, radius, stroke, connectLines, secondCounter, adder, globDragPoint, text, mouseDownholder;
 Nodes = [];
 Lines = [];
-radius = 55;
+radius = 65;
 stroke = 15;
 mouseDownHolder = null;
 
@@ -40,8 +40,14 @@ function Node(pos) {
 	this.node = new Path.Circle(this.nextPoint, radius);
 	this.node.style = nodeStyle;
 
-	// initialises nextPoint to current position
-	// this.nextPoint = this.node.position;
+	this.label = new PointText({
+		position: this.nextPoint,
+		content: 'Point ' + Math.floor(Math.random() * 1000),
+		fillColor: 'white'
+	});
+	this.label.position = this.nextPoint;
+
+	this.group = new Group([this.node, this.label]);
 
 	// this.nodeID = nodeID; // Needs to be assigned
 	this.selected = false; // Gets set to true for deleting this Node from the Nodes array
@@ -64,9 +70,8 @@ function Node(pos) {
 
 
 	this.move = function() {
-		// if (this.dragging) {
-		this.node.position = this.nextPoint;
-		// }
+		// this.node.position = this.nextPoint;
+		this.group.position = this.nextPoint;
 	}
 
 	// Drag and drop capabilities 
@@ -83,7 +88,8 @@ function Node(pos) {
 		// loops through array and deletes this Node based on its being 'selected'
 		for (var i = 0; i < Nodes.length; i++) {
 			if (Nodes[i].selected === true) {
-				Nodes[i].node.remove();
+				Nodes.group.remove();
+
 				Nodes.splice(i, 1);
 			}
 		}
@@ -92,9 +98,9 @@ function Node(pos) {
 	this.dragPoint = null;
 	this.mouseDownEvent = function(event) {
 		mouseDownHolder = this; // Assigns this Node object to the holder
-		this.node.bringToFront();
+		this.group.bringToFront();
 
-		var middleClicked = event.point.isClose(this.node.position, radius - stroke / 2);
+		var middleClicked = event.point.isClose(this.nextPoint, radius - stroke / 2);
 
 		if (this.newNode === true || middleClicked) {
 			this.dragging = true;
@@ -127,17 +133,19 @@ function Node(pos) {
 
 
 	/// Technical mouse events. They only call the better defined functions above.
-	this.node.onMouseDown = function(event) {
+	this.group.onMouseDown = function(event) {
+		console.log("Testing onMouseDown");
 		this.mouseDownEvent(event);
 	}.bind(this);
 
-	this.node.onMouseDrag = function(event) {
+	this.group.onMouseDrag = function(event) {
 		this.mouseDragEvent(event);
 	}.bind(this);
 
 	// Node delete
-	this.node.onDoubleClick = function(event) {
-		if (event.point.isClose(this.node.position, radius - stroke / 2)) {
+	this.group.onDoubleClick = function(event) {
+		console.log("Testing onDoubleClick");
+		if (event.point.isClose(this.nextPoint, radius - stroke / 2)) {
 			this.del();
 		}
 	}.bind(this);
@@ -227,9 +235,11 @@ function Line(node1, node2) {
 
 	this.mouseUpEvent = function(event) {
 		var secondNode = null,
-			leastDistance = 10000;
+			leastDistance = 10000,
+			nodesAlreadyConnected = false;
 		// Runs through each Node to check which is closest
 		for (var i = 0; i < Nodes.length; i++) {
+
 			var currNodeDistance = event.point.getDistance(Nodes[i].nextPoint);
 
 			if (currNodeDistance < leastDistance) {
@@ -240,19 +250,21 @@ function Line(node1, node2) {
 
 		if (this.nodes.length < 2) {
 
-			var nodesAlreadyConnected = false;
 			var firstNodeNodes = this.nodes[0].nodes();
 
 			// console.log("This Line's first Node's connections are", firstNodeNodes);
 
 			for (var i = 0; i < firstNodeNodes.length; i++) {
+
 				if (firstNodeNodes[i] === secondNode) {
 					console.log("Already connected! :(");
 					nodesAlreadyConnected = true;
 				}
 			}
 
-			if (leastDistance < radius && !nodesAlreadyConnected) { // Checks if closest Node is within 1 radius of mouseUp AND if nodes are not connected yet by another Line
+
+
+			if (leastDistance < radius && !nodesAlreadyConnected && secondNode !== this.nodes[0]) { // Checks if closest Node is within 1 radius of mouseUp AND if nodes are not connected yet by another Line
 				/// Connects to second Node
 				this.nodes.push(secondNode);
 				this.nodes[1].lines.push(this);
@@ -395,7 +407,7 @@ function randPoint(radius, nodesList) {
 		conflict = false;
 		point = Point.random() * new Rectangle(newFrame.width, newFrame.height) + newFrame.point;
 		for (var i = 0; i < Nodes.length; i++) {
-			if (point.isClose(Nodes[i].node.position, radius * 3)) {
+			if (point.isClose(Nodes[i].nextPoint, radius * 3)) {
 				conflict = true;
 			}
 		}
@@ -447,11 +459,9 @@ function onResize(event) {
 
 // Universal onMouseUp event - which executes selected object's individually defined mouseUpEvent function.
 function onMouseUp(event) {
+	console.log("Mouse up on:", mouseDownHolder);
 	if (mouseDownHolder !== null) {
-		console.log("Mouse up on:", mouseDownHolder);
 		mouseDownHolder.mouseUpEvent(event);
-	} else {
-		console.log("Mouse up on", mouseDownHolder);
 	}
 }
 
