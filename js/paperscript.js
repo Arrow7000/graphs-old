@@ -10,6 +10,8 @@ mouseDownHolder = null;
 
 
 
+
+
 ///  Styles 
 // Line style
 var lineStyle = {
@@ -26,6 +28,8 @@ var nodeStyle = lineStyle;
 var highlightStyle = {
 	fillColor: '#59ABE3'
 }
+
+
 
 
 //////////// Object constructors ////////////
@@ -71,7 +75,10 @@ function Node(pos) {
 
 	this.move = function() {
 		// this.node.position = this.nextPoint;
-		this.group.position = this.nextPoint;
+		// if (!this.dragging) {
+			this.group.position = this.nextPoint;
+		// }
+
 	}
 
 	// Drag and drop capabilities 
@@ -116,6 +123,8 @@ function Node(pos) {
 	this.mouseDragEvent = function(event) {
 		if (this.dragging) {
 			this.nextPoint = this.dragPoint + event.point;
+			// this.group.position = this.dragPoint + event.point;
+			// this.group.position = event.point;
 		} else {
 			Lines[Lines.length - 1].mouseDragEvent(event);
 		}
@@ -432,7 +441,9 @@ globals.init();
 
 
 
-
+// var testNode = new Path.Circle(view.center, radius);
+// testNode.style = nodeStyle;
+// testNode.bringToFront();
 
 
 
@@ -450,6 +461,7 @@ function onFrame(event) {
 	}
 	adder.node.bringToFront();
 	// console.log("mouseDownHolder:", mouseDownHolder);
+	// testNode.position += 0.3;
 }
 
 // Resize viewport event
