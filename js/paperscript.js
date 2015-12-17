@@ -76,7 +76,7 @@ function Node(pos) {
 	this.move = function() {
 		// this.node.position = this.nextPoint;
 		// if (!this.dragging) {
-			this.group.position = this.nextPoint;
+		this.group.position = this.nextPoint;
 		// }
 
 	}
@@ -95,7 +95,7 @@ function Node(pos) {
 		// loops through array and deletes this Node based on its being 'selected'
 		for (var i = 0; i < Nodes.length; i++) {
 			if (Nodes[i].selected === true) {
-				Nodes.group.remove();
+				Nodes[i].group.remove();
 
 				Nodes.splice(i, 1);
 			}
@@ -152,12 +152,15 @@ function Node(pos) {
 	}.bind(this);
 
 	// Node delete
+	this.node.onDoubleClick = function(event) {};
+	this.label.onDoubleClick = function(event) {};
 	this.group.onDoubleClick = function(event) {
 		console.log("Testing onDoubleClick");
 		if (event.point.isClose(this.nextPoint, radius - stroke / 2)) {
 			this.del();
 		}
 	}.bind(this);
+
 }
 
 
