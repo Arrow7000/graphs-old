@@ -72,13 +72,33 @@ function Node(pos) {
 		return nodesArray;
 	}
 
+	this.coulVec = function() {
+		var here = this.node.position;
+		var nodes = this.nodes();
+		var nodeLocs = [];
+		var vectors = [];
+		var norms = [];
+		var lines = [];
+
+		for (var i = 0; i < nodes.length; i++) {
+			nodeLocs.push(nodes[i].node.position); // Node positions
+			vectors.push(nodeLocs[i] - here); // Vectors: direction and length to nodes[] from this one
+			norms.push(vectors[i].normalize(100)); // Normalizing vector lengths 
+			lines.push(new Path.Line(here, here + norms[i])) // Drawing lines from here to here plus vectors
+			lines[i].style = {
+				strokeWidth: 1,
+				strokeColor: 'black'
+			}
+		}
+		return lines;
+	}
+
 
 	this.move = function() {
 		// this.node.position = this.nextPoint;
 		// if (!this.dragging) {
 		this.group.position = this.nextPoint;
 		// }
-
 	}
 
 	// Drag and drop capabilities 
@@ -86,10 +106,13 @@ function Node(pos) {
 	this.linking = false;
 
 	this.del = function() {
+		console.log("Node.del() triggered");
 		this.selected = true; // So that it can be identified from outside
+
+
 		// Removes all lines associated with this Node
 		for (var i = 0; i < this.lines.length; i++) {
-			this.lines[i].line.remove();
+			this.lines[i].del();
 		}
 
 		// loops through array and deletes this Node based on its being 'selected'
@@ -114,10 +137,14 @@ function Node(pos) {
 			if (!this.newNode) this.node.style = highlightStyle;
 			this.dragPoint = this.nextPoint - event.point;
 		} else {
-			Lines[Lines.length] = new Line(this);
+			Lines.push(new Line(this));
 			Lines[Lines.length - 1].mouseDownEvent(event);
 		}
 		console.log("Ths Node's connected Nodes: ", this.nodes());
+		// console.log("this.coulVec()", this.coulVec());
+		this.coulVec();
+		// console.log(this.lines);
+		flashNodeLines(this);
 	}
 
 	this.mouseDragEvent = function(event) {
@@ -157,6 +184,7 @@ function Node(pos) {
 	this.group.onDoubleClick = function(event) {
 		console.log("Testing onDoubleClick");
 		if (event.point.isClose(this.nextPoint, radius - stroke / 2)) {
+			// console.log("Deleting Node...");
 			this.del();
 		}
 	}.bind(this);
@@ -174,7 +202,7 @@ function Line(node1, node2) {
 
 
 	this.nodes = [node1]; // Assigns first Node to nodes array
-	node1.lines.push(this);
+	node1.lines.push(this); // Adds this line to first Node's lines array
 
 	if (node2) { // If was given a 2nd Node as input parameter
 
@@ -205,21 +233,27 @@ function Line(node1, node2) {
 	// Deletes this Line and all references to it
 	this.del = function() {
 		this.selected = true;
+
 		for (var i = 0; i < Lines.length; i++) {
 			if (Lines[i].selected === true) {
 				Lines[i].line.remove(); // Removes line path
 				// Removes references to line in the Line's two owner Nodes
-				for (var j = 0; j < node1.lines.length; j++) {
-					if (node1.lines[j].selected === true) node1.lines.splice(j, 1);
-				}
-				if (this.nodes.length > 1) { // Only deletes itself from 2nd Node's lines array if it has a 2nd Node
-					for (var j = 0; j < this.nodes[1].lines.length; j++) {
-						if (this.nodes[1].lines[j].selected === true) this.nodes[1].lines.splice(j, 1);
+				// for (var j = 0; j < this.nodes[0].lines.length; j++) {
+				// 	if (this.nodes[0].lines[j].selected === true) this.nodes[0].lines.splice(j, 1);
+				// }
+				// if (this.nodes.length > 1) { // Only deletes itself from 2nd Node's lines array if it has a 2nd Node
+				// 	for (var j = 0; j < this.nodes[1].lines.length; j++) {
+				// 		if (this.nodes[1].lines[j].selected === true) this.nodes[1].lines.splice(j, 1);
+				// 	}
+				// }
+
+				for (var j = 0; j < this.nodes.length; j++) {
+					for (var k = 0; k < this.nodes[j].lines.length; k++) {
+						if (this.nodes[j].lines[k].selected === true) this.nodes[j].lines.splice(j, 1);
 					}
 				}
 
 				Lines.splice(i, 1); // Removes itself from global Lines array
-				this.line.remove(); // Removes canvas line
 				break;
 			}
 		}
@@ -239,6 +273,7 @@ function Line(node1, node2) {
 		if (this.nodes.length > 1) {
 			this.line.lastSegment.point = event.point;
 		}
+		flashLine(this);
 	}
 
 	this.mouseDragEvent = function(event) {
@@ -260,14 +295,11 @@ function Line(node1, node2) {
 			}
 		}
 
+		// Checks if the Line's two nodes are already connected
 		if (this.nodes.length < 2) {
-
 			var firstNodeNodes = this.nodes[0].nodes();
-
 			// console.log("This Line's first Node's connections are", firstNodeNodes);
-
 			for (var i = 0; i < firstNodeNodes.length; i++) {
-
 				if (firstNodeNodes[i] === secondNode) {
 					console.log("Already connected! :(");
 					nodesAlreadyConnected = true;
@@ -279,7 +311,7 @@ function Line(node1, node2) {
 			if (leastDistance < radius && !nodesAlreadyConnected && secondNode !== this.nodes[0]) { // Checks if closest Node is within 1 radius of mouseUp AND if nodes are not connected yet by another Line
 				/// Connects to second Node
 				this.nodes.push(secondNode);
-				this.nodes[1].lines.push(this);
+				secondNode.lines.push(this);
 				this.line.lastSegment.point = this.nodes[1].nextPoint;
 				// console.log("Line close enough to a Node :)");
 				console.log("New Node connection!");
@@ -435,6 +467,20 @@ function absVector(vector) {
 	return new Point(newX, newY);
 }
 
+function flashLine(L) {
+	// console.log(L);
+	L.line.style.strokeColor = 'yellow';
+	setTimeout(function() {
+		L.line.style = lineStyle;
+	}, 1000);
+}
+
+function flashNodeLines(node) {
+	for (var i = 0; i < node.lines.length; i++) {
+		flashLine(node.lines[i]);
+	}
+}
+
 
 
 
@@ -474,7 +520,7 @@ function onResize(event) {
 
 // Universal onMouseUp event - which executes selected object's individually defined mouseUpEvent function.
 function onMouseUp(event) {
-	console.log("Mouse up on:", mouseDownHolder);
+	// console.log("Mouse up on:", mouseDownHolder);
 	if (mouseDownHolder !== null) {
 		mouseDownHolder.mouseUpEvent(event);
 	}
