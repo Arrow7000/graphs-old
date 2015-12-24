@@ -140,7 +140,7 @@ function Node(pos) {
 			Lines.push(new Line(this));
 			Lines[Lines.length - 1].mouseDownEvent(event);
 		}
-		console.log("Ths Node's connected Nodes: ", this.nodes());
+		console.log("This Node's connected Nodes: ", this.nodes());
 		// console.log("this.coulVec()", this.coulVec());
 		this.coulVec();
 		// console.log(this.lines);
@@ -231,32 +231,56 @@ function Line(node1, node2) {
 	this.selected = false;
 
 	// Deletes this Line and all references to it
+
+	/*
+	For each Node of this Line:
+		Each of its lines:
+			delete the line if it is selected
+	Remove the line path
+	Delete the Line object from Lines array
+
+	*/
+
+
 	this.del = function() {
+		console.log("Line deleted.");
 		this.selected = true;
+		var newLinesHolder = [];
 
-		for (var i = 0; i < Lines.length; i++) {
-			if (Lines[i].selected === true) {
-				Lines[i].line.remove(); // Removes line path
-				// Removes references to line in the Line's two owner Nodes
-				// for (var j = 0; j < this.nodes[0].lines.length; j++) {
-				// 	if (this.nodes[0].lines[j].selected === true) this.nodes[0].lines.splice(j, 1);
-				// }
-				// if (this.nodes.length > 1) { // Only deletes itself from 2nd Node's lines array if it has a 2nd Node
-				// 	for (var j = 0; j < this.nodes[1].lines.length; j++) {
-				// 		if (this.nodes[1].lines[j].selected === true) this.nodes[1].lines.splice(j, 1);
-				// 	}
-				// }
+		// For each nodes of this Line
+		var nodeNum = this.nodes.length;
+		for (var i = 0; i < nodeNum; i++) {
+			newLinesHolder.length = 0;
 
-				for (var j = 0; j < this.nodes.length; j++) {
-					for (var k = 0; k < this.nodes[j].lines.length; k++) {
-						if (this.nodes[j].lines[k].selected === true) this.nodes[j].lines.splice(j, 1);
-					}
+			// For every line of that node
+			var lineNum = this.nodes[i].lines.length;
+			for (var j = 0; j < lineNum; j++) {
+				// Delete the line from array if it's selected
+				if (this.nodes[i].lines[j].selected === false) {
+					// this.nodes[i].lines.splice(j, 1);
+					newLinesHolder.push(this.nodes[i].lines[j]);
 				}
+			}
+			this.nodes[i].lines.length = 0;
+			this.nodes[i].lines = newLinesHolder;
+			newLinesHolder.length = 0;
+		}
 
-				Lines.splice(i, 1); // Removes itself from global Lines array
-				break;
+		// Remove the line path
+		this.line.remove();
+
+		// Delete the Line object from Lines array
+		var LineNum = Lines.length;
+		for (var i = 0; i < LineNum; i++) {
+			if (Lines[i].selected === false) {
+				// Lines.splice(i, 1);
+				newLinesHolder.push(Lines[i]);
 			}
 		}
+		Lines.length = 0;
+		Lines = newLinesHolder;
+		newLinesHolder.length = 0;
+
 	}
 
 	// Updates the Line's ends' location
@@ -423,6 +447,12 @@ window.globals = {
 		for (var i = 0; i < lineConnections.length; i++) {
 			Lines[i] = new Line(Nodes[lineConnections[i].from], Nodes[lineConnections[i].to]);
 		}
+
+		// setInterval(function() {
+		// 	if (Lines.length > 1) {
+		// 		Lines[0].del();
+		// 	}
+		// }, 2000);
 	},
 	// Create a new Node
 	newNode: function(loc) {
@@ -531,18 +561,6 @@ function onMouseUp(event) {
 // the OMU function stores the object that triggered the OMD function and, along with its current position will execute the desired task, depending on what was intended by its movement.
 
 
-
-
-
-
-// Might need to create master Nodes object that holds all object coordinates in an array. Otherwise have current problem of canvas drawing only lines to whichever objects have already been created.
-// With master object can circumvent this by drawing entire aray of nodes first and only then array of lines.
-// Truth is master Nodes object doesn't need to hold any of the details, just the drawing functions. You can still have the individual Node objects that hold all relevant data to that object.
-
-
-
-
-// Implementation of edges is that they simply state which two nodes they connect
 // Forces needed: 
 //  - node repulsion so nodes don't get too close
 //  - tension, so lines don't get too long
@@ -554,7 +572,7 @@ function onMouseUp(event) {
 
 /*
 Design spec:
-  - You can add network elements by either clicking the canvas or an 'add' button
+  - You can add network elements by clicking an 'add' button
   - All balloons will be linkable to each other by dragging lines from one to the other
   - The balloons will rearrange to minimise length of connection lines, whilst maintaining network topography
   - However there will be a minimum length the connection line must be, so that they don't all collapse on one another
@@ -562,6 +580,6 @@ Design spec:
   - Balloons will sway somewhat around their locations, connections permitting
 
   Potentials:
-  - Somehow dragging a balloon will make it more likely to stay in the dropped area
+  - Somehow dragging a balloon will make it more likely to stay in the dropped area, so there is some stickiness
 
   */
