@@ -1,10 +1,13 @@
 // Global variable declarations
-var Nodes, Lines, radius, stroke, connectLines, secondCounter, adder, globDragPoint, text, mouseDownholder;
+var Nodes, Lines, radius, stroke, connectLines, secondCounter, adder, globDragPoint, text, mouseDownholder, coulomb, repulsion, counter, fps;
+fps = 60;
 Nodes = [];
 Lines = [];
 radius = 65;
 stroke = 15;
 mouseDownHolder = null;
+coulomb = true;
+repulsion = true;
 
 
 
@@ -110,12 +113,35 @@ function Node(pos) {
 
 	this.move = function() {
 		if (!this.dragging) {
-			var vec = this.coulVec();
-			// if (vec.length < radius + stroke) vec /= 100;
-			this.nextPoint += vec / 100;
-		}
-		this.group.position = this.nextPoint;
 
+			if (coulomb) {
+				var vec = this.coulVec();
+				// if (vec.length < radius + stroke) vec /= 100;
+				this.nextPoint += vec / 100;
+			}
+			if (repulsion) {
+				var opposite, magn;
+				for (var i = 0; i < Nodes.length; i++) {
+					if (Nodes[i] !== this) {
+						var hereToThere = Nodes[i].group.position - this.group.position;
+						// if (i === 1) {
+						console.log("Nodes[" + i + "]: " + (hereToThere));
+
+						// console.log("Opposite: " + -(hereToThere * .1));
+						console.log("hereToThere.length", hereToThere.length);
+						var opposite = -hereToThere;
+						var magn = 1 / opposite.length;
+
+						console.log("magn", magn);
+
+						if (opposite.length < radius * 4) this.nextPoint += ((opposite * magn*0.2));
+						// }
+					}
+				}
+			}
+		}
+		// Actually makes Node move to its new vector
+		this.group.position = this.nextPoint;
 	}
 
 	// Drag and drop capabilities 
@@ -456,6 +482,7 @@ window.globals = {
 	// Initialiser function
 	init: function() {
 		project.activeLayer.removeChildren();
+		counter = 0;
 
 		adder = new Adder;
 
@@ -545,17 +572,19 @@ globals.init();
 ///////////// Frame & global events ////////////
 ////////////////////////////////////////////////
 function onFrame(event) {
-
-
-	for (var i = 0; i < Nodes.length; i++) {
-		Nodes[i].move();
+	counter++;
+	if (counter % (60 / fps) === 0) {
+		for (var i = 0; i < Nodes.length; i++) {
+			Nodes[i].move();
+		}
+		for (var i = 0; i < Lines.length; i++) {
+			Lines[i].move();
+		}
+		adder.node.bringToFront();
+		// console.log("mouseDownHolder:", mouseDownHolder);
+		// testNode.position += 0.3;
 	}
-	for (var i = 0; i < Lines.length; i++) {
-		Lines[i].move();
-	}
-	adder.node.bringToFront();
-	// console.log("mouseDownHolder:", mouseDownHolder);
-	// testNode.position += 0.3;
+
 }
 
 // Resize viewport event
