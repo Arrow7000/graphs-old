@@ -80,25 +80,41 @@ function Node(pos) {
 		var norms = [];
 		var lines = [];
 
+		// Creates normalized vectors for all the Node's lines
 		for (var i = 0; i < nodes.length; i++) {
 			nodeLocs.push(nodes[i].node.position); // Node positions
 			vectors.push(nodeLocs[i] - here); // Vectors: direction and length to nodes[] from this one
 			norms.push(vectors[i].normalize(100)); // Normalizing vector lengths 
-			lines.push(new Path.Line(here, here + norms[i])) // Drawing lines from here to here plus vectors
-			lines[i].style = {
-				strokeWidth: 1,
-				strokeColor: 'black'
-			}
+			// lines.push(new Path.Line(here, here + norms[i])) // Drawing lines from here to here plus vectors
+			// lines[i].style = {
+			// 	strokeWidth: 1,
+			// 	strokeColor: 'black'
+			// }
 		}
-		return lines;
+
+		// 
+		var direction = new Point(0, 0);
+		for (var i = 0; i < vectors.length; i++) {
+			direction += vectors[i];
+		}
+		direction = direction / 10;
+
+		// var avgLinePath = new Path.Line(this.node.position, this.node.position + direction);
+		// avgLinePath.style = {
+		// 	strokeWidth: 1,
+		// 	strokeColor: 'black'
+		// }
+		return direction;
 	}
 
 
 	this.move = function() {
-		// this.node.position = this.nextPoint;
-		// if (!this.dragging) {
+		if (!this.dragging) {
+			var vec = this.coulVec();
+			if (vec.length > radius / 2 + stroke / 2) this.nextPoint += vec / 100;
+		}
 		this.group.position = this.nextPoint;
-		// }
+
 	}
 
 	// Drag and drop capabilities 
