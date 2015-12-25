@@ -111,7 +111,8 @@ function Node(pos) {
 	this.move = function() {
 		if (!this.dragging) {
 			var vec = this.coulVec();
-			if (vec.length > radius / 2 + stroke / 2) this.nextPoint += vec / 100;
+			// if (vec.length < radius + stroke) vec /= 100;
+			this.nextPoint += vec / 100;
 		}
 		this.group.position = this.nextPoint;
 
