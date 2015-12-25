@@ -109,9 +109,8 @@ function Node(pos) {
 		console.log("Node.del() triggered");
 		this.selected = true; // So that it can be identified from outside
 
-
 		// Removes all lines associated with this Node
-		for (var i = 0; i < this.lines.length; i++) {
+		for (var i = this.lines.length - 1; i >= 0; i--) {
 			this.lines[i].del();
 		}
 
@@ -261,12 +260,14 @@ function Line(node1, node2) {
 					newLinesHolder.push(this.nodes[i].lines[j]);
 				}
 			}
+			// IT PASSES BY REFERENCE NOT BY FUCKING VALUE
 			this.nodes[i].lines.length = 0;
-			this.nodes[i].lines = newLinesHolder;
+			this.nodes[i].lines = newLinesHolder.slice();
 			newLinesHolder.length = 0;
 		}
 
 		// Remove the line path
+		// console.log("this.line", this.line);
 		this.line.remove();
 
 		// Delete the Line object from Lines array
@@ -278,9 +279,12 @@ function Line(node1, node2) {
 			}
 		}
 		Lines.length = 0;
-		Lines = newLinesHolder;
+		for (var i = 0; i < newLinesHolder.length; i++) {
+			Lines.push(newLinesHolder[i]);
+		}
+		Lines = newLinesHolder.slice();
 		newLinesHolder.length = 0;
-
+		// console.log("Lines", Lines);
 	}
 
 	// Updates the Line's ends' location
@@ -447,12 +451,6 @@ window.globals = {
 		for (var i = 0; i < lineConnections.length; i++) {
 			Lines[i] = new Line(Nodes[lineConnections[i].from], Nodes[lineConnections[i].to]);
 		}
-
-		// setInterval(function() {
-		// 	if (Lines.length > 1) {
-		// 		Lines[0].del();
-		// 	}
-		// }, 2000);
 	},
 	// Create a new Node
 	newNode: function(loc) {
