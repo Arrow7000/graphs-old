@@ -1,13 +1,14 @@
 // Global variable declarations
-var Nodes, Lines, radius, stroke, connectLines, secondCounter, adder, globDragPoint, text, mouseDownholder, coulomb, repulsion, counter, fps;
+var Nodes, Lines, radius, stroke, connectLines, secondCounter, adder, globDragPoint, text, mouseDownholder, coulomb, coulomb2, repulsion, counter, fps;
 fps = 60;
 Nodes = [];
 Lines = [];
 radius = 65;
 stroke = 15;
 mouseDownHolder = null;
-coulomb = true;
-repulsion = true;
+coulomb = false;
+coulomb2 = true;
+repulsion = false;
 
 
 
@@ -110,14 +111,44 @@ function Node(pos) {
 		return direction;
 	}
 
+	this.coulVec2 = function() {
+		var nodes = this.nodes();
+		var paths = [];
+		var vector;
+		if (nodes.length > 1) {
+
+			for (var i = 0; i < nodes.length; i++) {
+
+				// vector = this.node.position - nodes[i].node.position;
+				// vector = vector.normalize(100);
+
+				// paths.push(new Path.Line(nodes[i].node.position, nodes[i].node.position + vector));
+				// paths[i].style = {
+				// 	strokeColor: 'black',
+				// 	strokeWidth: 2
+				// }
+
+				// nodes[i].group.pivot = this.group.position;
+				// nodes[i].node.rotate(.1, this.node.position);
+				var origin = this.node.position;
+				var nxp = nodes[i].nextPoint;
+				var point = origin;
+
+				point += (nxp - origin).rotate(1, origin);
+				nodes[i].nextPoint = point;
+			}
+		}
+	}
+
+
 
 	this.move = function() {
 		if (!this.dragging) {
 
 			if (coulomb) {
-				var vec = this.coulVec();
+				var vec = this.coulVec() * 2;
 				// if (vec.length < radius + stroke) vec /= 100;
-				this.nextPoint += vec / 100;
+				this.nextPoint += vec / 50;
 			}
 			if (repulsion) {
 				var opposite, magn;
@@ -125,19 +156,22 @@ function Node(pos) {
 					if (Nodes[i] !== this) {
 						var hereToThere = Nodes[i].group.position - this.group.position;
 						// if (i === 1) {
-						console.log("Nodes[" + i + "]: " + (hereToThere));
+						// console.log("Nodes[" + i + "]: " + (hereToThere));
 
 						// console.log("Opposite: " + -(hereToThere * .1));
-						console.log("hereToThere.length", hereToThere.length);
+						// console.log("hereToThere.length", hereToThere.length);
 						var opposite = -hereToThere;
 						var magn = 1 / opposite.length;
 
-						console.log("magn", magn);
+						// console.log("magn", magn);
 
-						if (opposite.length < radius * 4) this.nextPoint += ((opposite * magn*0.2));
+						if (opposite.length < radius * 4) this.nextPoint += (opposite * magn * 0.4);
 						// }
 					}
 				}
+			}
+			if (coulomb2) {
+				this.coulVec2();
 			}
 		}
 		// Actually makes Node move to its new vector
@@ -187,6 +221,7 @@ function Node(pos) {
 		this.coulVec();
 		// console.log(this.lines);
 		flashNodeLines(this);
+		// this.send("Clicky! " + counter);
 	}
 
 	this.mouseDragEvent = function(event) {
@@ -240,7 +275,7 @@ function Node(pos) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////// Line constructor! 
 function Line(node1, node2) {
-	console.log("Lines.length", Lines.length);
+	// console.log("Lines.length", Lines.length);
 
 
 	this.nodes = [node1]; // Assigns first Node to nodes array
