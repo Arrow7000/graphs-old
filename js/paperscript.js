@@ -6,9 +6,9 @@ Lines = [];
 radius = 65;
 stroke = 15;
 mouseDownHolder = null;
-coulomb = false;
+coulomb = true;
 coulomb2 = true;
-repulsion = false;
+repulsion = true;
 
 
 
@@ -143,6 +143,9 @@ function Node(pos) {
 
 
 	this.move = function() {
+		if (coulomb2) {
+			this.coulVec2();
+		}
 		if (!this.dragging) {
 
 			if (coulomb) {
@@ -170,10 +173,8 @@ function Node(pos) {
 					}
 				}
 			}
-			if (coulomb2) {
-				this.coulVec2();
-			}
 		}
+
 		// Actually makes Node move to its new vector
 		this.group.position = this.nextPoint;
 	}
