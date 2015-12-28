@@ -118,24 +118,24 @@ function Node(pos) {
 		if (nodes.length > 1) {
 
 			for (var i = 0; i < nodes.length; i++) {
+				if (nodes[i].dragging !== true) {
+					// vector = this.node.position - nodes[i].node.position;
+					// vector = vector.normalize(100);
 
-				// vector = this.node.position - nodes[i].node.position;
-				// vector = vector.normalize(100);
+					// paths.push(new Path.Line(nodes[i].node.position, nodes[i].node.position + vector));
+					// paths[i].style = {
+					// 	strokeColor: 'black',
+					// 	strokeWidth: 2
+					// }
 
-				// paths.push(new Path.Line(nodes[i].node.position, nodes[i].node.position + vector));
-				// paths[i].style = {
-				// 	strokeColor: 'black',
-				// 	strokeWidth: 2
-				// }
+					var origin = this.group.position;
+					var nxp = nodes[i].nextPoint;
+					// var point = origin;
 
-				// nodes[i].group.pivot = this.group.position;
-				// nodes[i].node.rotate(.1, this.node.position);
-				var origin = this.node.position;
-				var nxp = nodes[i].nextPoint;
-				var point = origin;
+					nodes[i].nextPoint = ((nodes[i].nextPoint - origin).rotate(.1) + origin);
+				}
 
-				point += (nxp - origin).rotate(1, origin);
-				nodes[i].nextPoint = point;
+
 			}
 		}
 	}
