@@ -111,6 +111,17 @@ function Node(pos) {
 		return direction;
 	}
 
+	this.vecLine = function() {
+		var line = new Path.Line(this.node.position, this.node.position + this.coulVec());
+		line.style = {
+			strokeWidth: 1,
+			strokeColor: 'black'
+		}
+
+	}
+
+
+	// Makes all nodes around this one starfish around this node
 	this.coulVec2 = function() {
 		var nodes = this.nodes();
 		var paths = [];
@@ -119,25 +130,48 @@ function Node(pos) {
 
 			for (var i = 0; i < nodes.length; i++) {
 				if (nodes[i].dragging !== true) {
-					// vector = this.node.position - nodes[i].node.position;
+					/*// vector = this.node.position - nodes[i].node.position;
 					// vector = vector.normalize(100);
 
 					// paths.push(new Path.Line(nodes[i].node.position, nodes[i].node.position + vector));
 					// paths[i].style = {
 					// 	strokeColor: 'black',
 					// 	strokeWidth: 2
-					// }
+					// }*/
 
-					var origin = this.group.position;
-					var nxp = nodes[i].nextPoint;
-					// var point = origin;
 
-					nodes[i].nextPoint = ((nodes[i].nextPoint - origin).rotate(.1) + origin);
+					// nodes[i].nextPoint = rot(nodes[i].nextPoint, this.group.position, .2);
+
+
+					nodes[i].nextPoint += -(this.coulVec() / nodes.length) / 10;
+
+
+
+				}
+			}
+		}
+	}
+
+	this.repulsion = function() {
+		var opposite, magn, direction = new Point(0, 0);
+
+		for (var i = 0; i < Nodes.length; i++) {
+			if (Nodes[i] !== this) {
+				var hereToThere = Nodes[i].group.position - this.group.position;
+
+				magn = hereToThere.length;
+				console.log(magn);
+				if (magn < 500) {
+					direction = -hereToThere * (500 - magn);
+
 				}
 
+				// y = -3x - 50
+				return direction / 500;
 
 			}
 		}
+
 	}
 
 
@@ -154,24 +188,21 @@ function Node(pos) {
 				this.nextPoint += vec / 50;
 			}
 			if (repulsion) {
-				var opposite, magn;
-				for (var i = 0; i < Nodes.length; i++) {
-					if (Nodes[i] !== this) {
-						var hereToThere = Nodes[i].group.position - this.group.position;
-						// if (i === 1) {
-						// console.log("Nodes[" + i + "]: " + (hereToThere));
 
-						// console.log("Opposite: " + -(hereToThere * .1));
-						// console.log("hereToThere.length", hereToThere.length);
-						var opposite = -hereToThere;
-						var magn = 1 / opposite.length;
+				// var opposite, magn;
+				// for (var i = 0; i < Nodes.length; i++) {
+				// 	if (Nodes[i] !== this) {
+				// 		var hereToThere = Nodes[i].group.position - this.group.position;
 
-						// console.log("magn", magn);
+				// 		var opposite = -hereToThere;
+				// 		var magn = 1 / opposite.length;
 
-						if (opposite.length < radius * 4) this.nextPoint += (opposite * magn * 0.4);
-						// }
-					}
-				}
+				// 		if (opposite.length < radius * 4) this.nextPoint += (opposite * magn * 0.4);
+				// 		// }
+				// 	}
+				// }
+
+				this.nextPoint += this.repulsion();
 			}
 		}
 
@@ -569,12 +600,13 @@ function randPoint(radius, nodesList) {
 	return point;
 }
 
-function absVector(vector) {
-	var newX = Math.sqrt(vector.x * vector.x);
-	var newY = Math.sqrt(vector.y * vector.y);
-	return new Point(newX, newY);
-}
+// function absVector(vector) {
+// 	var newX = Math.sqrt(vector.x * vector.x);
+// 	var newY = Math.sqrt(vector.y * vector.y);
+// 	return new Point(newX, newY);
+// }
 
+// Makes a line flash for a second
 function flashLine(L) {
 	// console.log(L);
 	L.line.style.strokeColor = 'yellow';
@@ -583,10 +615,17 @@ function flashLine(L) {
 	}, 1000);
 }
 
+// Makes all lines connected to a node light up
 function flashNodeLines(node) {
 	for (var i = 0; i < node.lines.length; i++) {
 		flashLine(node.lines[i]);
 	}
+}
+
+
+// Makes rotatee rotate around the origin by given number degrees each frame
+function rot(rotatee, origin, degrees) {
+	return rotatee = ((rotatee - origin).rotate(degrees) + origin);
 }
 
 
