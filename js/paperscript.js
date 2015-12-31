@@ -6,9 +6,9 @@ Lines = [];
 radius = 65;
 stroke = 15;
 mouseDownHolder = null;
-coulomb = true;
-coulomb2 = true;
-repulsion = true;
+coulomb = false;
+coulomb2 = false;
+repulsion = false;
 
 
 
@@ -233,7 +233,7 @@ function Node(pos) {
 		}
 	}
 
-	this.dragPoint = null;
+	// this.dragPoint = null;
 	this.mouseDownEvent = function(event) {
 		mouseDownHolder = this; // Assigns this Node object to the holder
 		this.group.bringToFront();
@@ -243,7 +243,7 @@ function Node(pos) {
 		if (this.newNode === true || middleClicked) {
 			this.dragging = true;
 			if (!this.newNode) this.node.style = highlightStyle;
-			this.dragPoint = this.nextPoint - event.point;
+			// this.dragPoint = this.nextPoint - event.point;
 		} else {
 			Lines.push(new Line(this));
 			Lines[Lines.length - 1].mouseDownEvent(event);
@@ -252,13 +252,14 @@ function Node(pos) {
 		// console.log("this.coulVec()", this.coulVec());
 		this.coulVec();
 		// console.log(this.lines);
-		flashNodeLines(this);
+		// flashNodeLines(this);
 		// this.send("Clicky! " + counter);
 	}
 
 	this.mouseDragEvent = function(event) {
 		if (this.dragging) {
-			this.nextPoint = this.dragPoint + event.point;
+			// this.nextPoint = this.dragPoint + event.point;
+			this.nextPoint += event.delta;
 			// this.group.position = this.dragPoint + event.point;
 			// this.group.position = event.point;
 		} else {
@@ -268,7 +269,7 @@ function Node(pos) {
 
 	this.mouseUpEvent = function(event) {
 		if (this.dragging) {
-			this.nextPoint = this.dragPoint + event.point;
+			// this.nextPoint = this.dragPoint + event.point;
 			this.node.style = nodeStyle;
 			this.dragging = false;
 		}
@@ -411,7 +412,7 @@ function Line(node1, node2) {
 		if (this.nodes.length > 1) {
 			this.line.lastSegment.point = event.point;
 		}
-		flashLine(this);
+		// flashLine(this);
 	}
 
 	this.mouseDragEvent = function(event) {
