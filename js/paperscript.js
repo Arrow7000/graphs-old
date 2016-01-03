@@ -252,7 +252,7 @@ function Node(pos) {
 		}
 	}
 
-	this.dragPoint = null;
+	// this.dragPoint = null;
 	this.mouseDownEvent = function(event) {
 		mouseDownHolder = this; // Assigns this Node object to the holder
 		this.group.bringToFront();
