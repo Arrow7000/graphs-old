@@ -1,14 +1,16 @@
 // Global variable declarations
-var Nodes, Lines, radius, stroke, connectLines, secondCounter, adder, globDragPoint, text, mouseDownholder, coulomb, coulomb2, repulsion, counter, fps;
+var Nodes, Lines, radius, stroke, connectLines, secondCounter, adder, globDragPoint, text, mouseDownholder, coulomb, coulomb2, repulsion, friction, debug, counter, fps;
 fps = 60;
 Nodes = [];
 Lines = [];
 radius = 65;
 stroke = 15;
 mouseDownHolder = null;
-coulomb = true;
-coulomb2 = true;
-repulsion = true;
+coulomb = false;
+coulomb2 = false;
+repulsion = false;
+friction = true;
+debug = false;
 
 
 
@@ -19,12 +21,13 @@ repulsion = true;
 ///  Styles 
 // Line style
 var lineStyle = {
-		strokeWidth: stroke,
-		fillColor: '#446CB3',
-		strokeColor: '#E4F1FE',
-		strokeCap: 'round'
-	}
-	// Node style
+	strokeWidth: stroke,
+	fillColor: '#446CB3',
+	strokeColor: '#E4F1FE',
+	strokeCap: 'round'
+}
+
+// Node style
 var nodeStyle = lineStyle;
 // nodeStyle.strokeWidth = 10;
 
@@ -42,18 +45,24 @@ var highlightStyle = {
 function Node(pos) {
 
 	// Assigns random position if none specified
-	this.nextPoint = pos ? pos : randPoint(radius, Nodes);
+	// this.nextPoint = pos ? pos : randPoint(radius, Nodes); // still including it for when something depeends on it being initialised
+	var position = pos ? pos : randPoint(radius, Nodes);
+
+	this.velocity = new Point(0, 0);
+
 
 	// Creates the Path
-	this.node = new Path.Circle(this.nextPoint, radius);
+	// this.node = new Path.Circle(this.nextPoint, radius);
+	this.node = new Path.Circle(position, radius);
+
 	this.node.style = nodeStyle;
 
 	this.label = new PointText({
-		position: this.nextPoint,
+		position: position,
 		content: 'Point ' + Math.floor(Math.random() * 1000),
 		fillColor: 'white'
 	});
-	this.label.position = this.nextPoint;
+	this.label.position = position;
 
 	this.group = new Group([this.node, this.label]);
 
@@ -76,19 +85,30 @@ function Node(pos) {
 		return nodesArray;
 	}
 
+	// Returns the opposing force to input param
+	this.friction = function(velocity) {
+		// console.log(velocity);
+		var fricForce = -velocity.normalize() / 10;
+		console.log(fricForce);
+		return fricForce;
+	}
+
 	this.coulVec = function() {
 		var here = this.node.position;
 		var nodes = this.nodes();
-		var nodeLocs = [];
-		var vectors = [];
-		var norms = [];
-		var lines = [];
+		var nodeLocs = [],
+			vectors = [],
+			norms = [],
+			lines = [];
+		var totalLength = 0;
 
 		// Creates normalized vectors for all the Node's lines
 		for (var i = 0; i < nodes.length; i++) {
 			nodeLocs.push(nodes[i].node.position); // Node positions
 			vectors.push(nodeLocs[i] - here); // Vectors: direction and length to nodes[] from this one
 			norms.push(vectors[i].normalize(100)); // Normalizing vector lengths 
+			// norms.push(vectors[i]);
+			// totalLength += vectors[i].length;
 			// lines.push(new Path.Line(here, here + norms[i])) // Drawing lines from here to here plus vectors
 			// lines[i].style = {
 			// 	strokeWidth: 1,
@@ -101,7 +121,7 @@ function Node(pos) {
 		for (var i = 0; i < vectors.length; i++) {
 			direction += vectors[i];
 		}
-		direction = direction / 10;
+		direction /= vectors.length;
 
 		// var avgLinePath = new Path.Line(this.node.position, this.node.position + direction);
 		// avgLinePath.style = {
@@ -177,37 +197,36 @@ function Node(pos) {
 
 
 	this.move = function() {
-		if (coulomb2) {
-			this.coulVec2();
-		}
-		if (!this.dragging) {
+		// console.log(this.velocity.length);
 
+		if (!this.dragging) {
+			// if (coulomb2) {
+			// 	this.coulVec2();
+			// }
 			if (coulomb) {
-				var vec = this.coulVec() * 2;
-				// if (vec.length < radius + stroke) vec /= 100;
-				this.nextPoint += vec / 50;
+				this.velocity += this.coulVec();
 			}
 			if (repulsion) {
-
-				// var opposite, magn;
-				// for (var i = 0; i < Nodes.length; i++) {
-				// 	if (Nodes[i] !== this) {
-				// 		var hereToThere = Nodes[i].group.position - this.group.position;
-
-				// 		var opposite = -hereToThere;
-				// 		var magn = 1 / opposite.length;
-
-				// 		if (opposite.length < radius * 4) this.nextPoint += (opposite * magn * 0.4);
-				// 		// }
-				// 	}
-				// }
-
-				this.nextPoint += this.repulsion();
+				// this.nextPoint += this.repulsion();
 			}
+			if (friction) {
+				if (this.velocity.length > 0.01) {
+					this.velocity += this.friction(this.velocity);
+				} else {
+					this.velocity = new Point(0, 0);
+				}
+			}
+			console.log(this.velocity);
+			this.group.position += this.velocity;
+		} else {
+			this.velocity = new Point(0, 0);
 		}
 
+
 		// Actually makes Node move to its new vector
-		this.group.position = this.nextPoint;
+		// this.group.position = this.nextPoint;
+
+
 	}
 
 	// Drag and drop capabilities 
@@ -238,12 +257,12 @@ function Node(pos) {
 		mouseDownHolder = this; // Assigns this Node object to the holder
 		this.group.bringToFront();
 
-		var middleClicked = event.point.isClose(this.nextPoint, radius - stroke / 2);
+		var middleClicked = event.point.isClose(this.group.position, radius - stroke / 2);
 
 		if (this.newNode === true || middleClicked) {
 			this.dragging = true;
 			if (!this.newNode) this.node.style = highlightStyle;
-			this.dragPoint = this.nextPoint - event.point;
+			this.dragPoint = this.group.position - event.point;
 		} else {
 			Lines.push(new Line(this));
 			Lines[Lines.length - 1].mouseDownEvent(event);
@@ -252,13 +271,13 @@ function Node(pos) {
 		// console.log("this.coulVec()", this.coulVec());
 		this.coulVec();
 		// console.log(this.lines);
-		flashNodeLines(this);
+		if (debug) flashNodeLines(this);
 		// this.send("Clicky! " + counter);
 	}
 
 	this.mouseDragEvent = function(event) {
 		if (this.dragging) {
-			this.nextPoint = this.dragPoint + event.point;
+			this.group.position = this.dragPoint + event.point;
 			// this.group.position = this.dragPoint + event.point;
 			// this.group.position = event.point;
 		} else {
@@ -268,7 +287,7 @@ function Node(pos) {
 
 	this.mouseUpEvent = function(event) {
 		if (this.dragging) {
-			this.nextPoint = this.dragPoint + event.point;
+			// this.nextPoint = this.dragPoint + event.point;
 			this.node.style = nodeStyle;
 			this.dragging = false;
 		}
@@ -292,7 +311,7 @@ function Node(pos) {
 	this.label.onDoubleClick = function(event) {};
 	this.group.onDoubleClick = function(event) {
 		console.log("Testing onDoubleClick");
-		if (event.point.isClose(this.nextPoint, radius - stroke / 2)) {
+		if (event.point.isClose(this.group.position, radius - stroke / 2)) {
 			// console.log("Deleting Node...");
 			this.del();
 		}
@@ -319,11 +338,11 @@ function Line(node1, node2) {
 		node2.lines.push(this); // Pushes itself into the Node's lines array
 
 		// Draws the actual line path
-		this.line = new Path.Line(node1.nextPoint, node2.nextPoint);
+		this.line = new Path.Line(node1.group.position, node2.group.position);
 
 	} else {
 		// Draws the actual line path
-		this.line = new Path.Line(node1.nextPoint, node1.nextPoint);
+		this.line = new Path.Line(node1.group.position, node1.group.position);
 	}
 
 	// Line style stuff
@@ -399,9 +418,9 @@ function Line(node1, node2) {
 
 	// Updates the Line's ends' location
 	this.move = function() {
-		this.line.firstSegment.point = this.nodes[0].nextPoint; // First Line end always follows the Node it's attached to
+		this.line.firstSegment.point = this.nodes[0].group.position; // First Line end always follows the Node it's attached to
 		if (this.nodes.length > 1) { // Only updates 2nd end's position if it's attached to a Node
-			this.line.lastSegment.point = this.nodes[1].nextPoint;
+			this.line.lastSegment.point = this.nodes[1].group.position;
 		}
 	}
 
@@ -411,7 +430,7 @@ function Line(node1, node2) {
 		if (this.nodes.length > 1) {
 			this.line.lastSegment.point = event.point;
 		}
-		flashLine(this);
+		if (debug) flashLine(this);
 	}
 
 	this.mouseDragEvent = function(event) {
@@ -425,7 +444,7 @@ function Line(node1, node2) {
 		// Runs through each Node to check which is closest
 		for (var i = 0; i < Nodes.length; i++) {
 
-			var currNodeDistance = event.point.getDistance(Nodes[i].nextPoint);
+			var currNodeDistance = event.point.getDistance(Nodes[i].group.position);
 
 			if (currNodeDistance < leastDistance) {
 				leastDistance = currNodeDistance;
@@ -450,7 +469,7 @@ function Line(node1, node2) {
 				/// Connects to second Node
 				this.nodes.push(secondNode);
 				secondNode.lines.push(this);
-				this.line.lastSegment.point = this.nodes[1].nextPoint;
+				this.line.lastSegment.point = this.nodes[1].group.position;
 				// console.log("Line close enough to a Node :)");
 				console.log("New Node connection!");
 			} else { // if Line is too far, releasing the mouse button deletes the Line
@@ -556,12 +575,18 @@ window.globals = {
 		Nodes = [];
 		Lines = [];
 
+		// var nodeNum = 1;
+
 		for (var i = 0; i < nodeNum; i++) {
 			Nodes[i] = new Node(randPoint(radius, Nodes), i);
+			Nodes[i].velocity += new Point(0, 5);
+			Nodes[i].velocity.angle = Nodes[i].velocity.angle + Math.random() * 360;
+
 		}
 		for (var i = 0; i < lineConnections.length; i++) {
 			Lines[i] = new Line(Nodes[lineConnections[i].from], Nodes[lineConnections[i].to]);
 		}
+
 	},
 	// Create a new Node
 	newNode: function(loc) {
@@ -590,7 +615,7 @@ function randPoint(radius, nodesList) {
 		conflict = false;
 		point = Point.random() * new Rectangle(newFrame.width, newFrame.height) + newFrame.point;
 		for (var i = 0; i < Nodes.length; i++) {
-			if (point.isClose(Nodes[i].nextPoint, radius * 3)) {
+			if (point.isClose(Nodes[i].group.position, radius * 3)) {
 				conflict = true;
 			}
 		}
